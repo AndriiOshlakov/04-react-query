@@ -8,13 +8,15 @@ import css from "./App.module.css";
 import { useState } from "react";
 import MovieGrid from "../MovieGrid/MovieGrid";
 import MovieModal from "../MovieModal/MovieModal";
+import ReactPaginate from "react-paginate";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
 function App() {
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [page, setPage] = useState(1);
 
   const openModal = () => setIsModalOpen(true);
 
@@ -23,28 +25,27 @@ function App() {
     setSelectedMovie(null);
   };
 
-  const handleSearch = async (query: string) => {
-    try {
-      setIsLoading(true);
-      setIsError(false);
-      setMovies([]);
-      const data = await fetchMovies(query);
-      console.log(data);
+  const { data, isLoading, isError, isSuccess } = useQuery({
+    queryKey: ["movies", query, page],
+    queryFn: () => fetchMovies(query, page),
+    enabled: query !== "",
+    placeholderData: keepPreviousData,
+  });
 
-      if (data.length === 0) {
-        toast.error("No movies found for your request.", {
-          duration: 4000,
-          position: "top-center",
-          removeDelay: 1000,
-        });
-      }
+  const totalPages = data?.total_pages ?? 0;
 
-      setMovies(data);
-    } catch {
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
+  const handleSearch = async (newQuery: string) => {
+    if (data?.results.length === 0) {
+      toast.error("No movies found for your request.", {
+        duration: 4000,
+        position: "top-center",
+        removeDelay: 1000,
+      });
     }
+    if (data) {
+      setMovies(data.results);
+    }
+    setQuery(newQuery);
   };
   const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie);
@@ -53,6 +54,19 @@ function App() {
   return (
     <div className={css.app}>
       <SearchBar onSubmit={handleSearch} />
+      {isSuccess && totalPages > 1 && (
+        <ReactPaginate
+          pageCount={totalPages}
+          pageRangeDisplayed={5}
+          marginPagesDisplayed={1}
+          onPageChange={({ selected }) => setPage(selected + 1)}
+          forcePage={page - 1}
+          containerClassName={css.pagination}
+          activeClassName={css.active}
+          nextLabel="→"
+          previousLabel="←"
+        />
+      )}
       {isLoading && <Loader />}
       {isError && <ErrorMessage />}
       {movies.length > 0 && (
