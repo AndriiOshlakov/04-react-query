@@ -5,7 +5,7 @@ import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import Loader from "../Loader/Loader";
 import SearchBar from "../SearchBar/SearchBar";
 import css from "./App.module.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MovieGrid from "../MovieGrid/MovieGrid";
 import MovieModal from "../MovieModal/MovieModal";
 import ReactPaginate from "react-paginate";
@@ -34,17 +34,22 @@ function App() {
 
   const totalPages = data?.total_pages ?? 0;
 
-  const handleSearch = async (newQuery: string) => {
-    if (data?.results.length === 0) {
-      toast.error("No movies found for your request.", {
-        duration: 4000,
-        position: "top-center",
-        removeDelay: 1000,
-      });
-    }
+  useEffect(() => {
     if (data) {
       setMovies(data.results);
+      if (data.results.length === 0) {
+        toast.error("No movies found for your request.", {
+          duration: 4000,
+          position: "top-center",
+          removeDelay: 1000,
+        });
+      }
     }
+  }, [data]);
+
+  const handleSearch = (newQuery: string) => {
+    setMovies([]);
+    setPage(1);
     setQuery(newQuery);
   };
   const handleMovieSelect = (movie: Movie) => {
