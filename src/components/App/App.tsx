@@ -13,15 +13,10 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
 function App() {
   const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [page, setPage] = useState(1);
 
-  const openModal = () => setIsModalOpen(true);
-
   const closeModal = () => {
-    setIsModalOpen(false);
     setSelectedMovie(null);
   };
 
@@ -35,26 +30,21 @@ function App() {
   const totalPages = data?.total_pages ?? 0;
 
   useEffect(() => {
-    if (data) {
-      setMovies(data.results);
-      if (data.results.length === 0) {
-        toast.error("No movies found for your request.", {
-          duration: 4000,
-          position: "top-center",
-          removeDelay: 1000,
-        });
-      }
+    if (data && data.results.length === 0) {
+      toast.error("No movies found for your request.", {
+        duration: 4000,
+        position: "top-center",
+        removeDelay: 1000,
+      });
     }
   }, [data]);
 
   const handleSearch = (newQuery: string) => {
-    setMovies([]);
     setPage(1);
     setQuery(newQuery);
   };
   const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie);
-    openModal();
   };
   return (
     <div className={css.app}>
@@ -74,10 +64,10 @@ function App() {
       )}
       {isLoading && <Loader />}
       {isError && <ErrorMessage />}
-      {movies.length > 0 && (
-        <MovieGrid movies={movies} onSelect={handleMovieSelect} />
+      {data && data?.results.length > 0 && (
+        <MovieGrid movies={data?.results} onSelect={handleMovieSelect} />
       )}
-      {isModalOpen && selectedMovie !== null && (
+      {selectedMovie !== null && (
         <MovieModal onClose={closeModal} movie={selectedMovie} />
       )}
     </div>
